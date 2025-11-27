@@ -13,35 +13,8 @@ int totalLoops;
 
 #define DEBOUNCE_TIME 250
 
-enum systemState {
-	LDR_ON,
-	LDR_OFF
-};
-
 systemState currentState = LDR_OFF;
 systemState prevState = currentState;
-
-/**
- * Toggle system state between LDR_ON and LDR_OFF.
- *
- * Effects:
- *  - Updates currentState.
- *  - Sets RGB LED to GREEN when LDR is enabled, RED when disabled.
- *  - Prints a state message to the Serial monitor.
- *
- * Notes:
- *  - This function is invoked by the button ISR (button_isr) after debouncing.
- *    Keep it short; avoid heavy processing. Serial and PWM calls may elongate
- *    ISR latency on some boards.
- */
-void changeState() {
-	if (currentState == LDR_OFF) {
-		currentState = LDR_ON;
-	} 
-	else {
-		currentState = LDR_OFF;
-	}
-}
 
 /**
  * Interrupt Service Routine (ISR) for the user button with simple debounce.
@@ -87,23 +60,19 @@ void setup() {
   	while (!Serial);  // wait for serial port to connect. Needed for native USB
   
   	delay(1000);
-  	Serial.println("\n[main_isr.c] Starting button ISR example...");
+  	Serial.println("\n[main_isr.cpp] Starting button ISR example...");
 	
 	// RGB LED
-	pinMode(LED_R_PIN, OUTPUT);
-	pinMode(LED_G_PIN, OUTPUT);
-	pinMode(LED_B_PIN, OUTPUT);
-	analogWrite(LED_R_PIN, 255);
-	analogWrite(LED_G_PIN, 0);
-	analogWrite(LED_B_PIN, 0);
-	
-	// Button: internal pull-up, RISING-edge interrupt
+    configInitRGBLed();
+
+    // Button: internal pull-up, RISING-edge interrupt
 	pinMode(BUTTON_PIN, INPUT_PULLUP);
 	attachInterrupt(BUTTON_PIN, button_isr, RISING);
 	
 	// LDR analog input
 	pinMode(LDR_PIN, INPUT);
 }
+
 
 /**
  * @brief Main runtime loop.
@@ -115,9 +84,6 @@ void setup() {
  * - When the system state is LDR_OFF, the loop runs without delay, allowing
  *   quick responsiveness to button interrupts that may toggle the state.
  *
- * Notes:
- * - The delay(1000) only runs while LDR is ON. Interrupts remain active during
- *   delay(), so the button ISR can still trigger and toggle the state.
  */
 void loop() {
 	static uint32_t lastLdrRead = 0;
