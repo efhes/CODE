@@ -100,7 +100,9 @@ void loop() {
 			setRGBLedColor(0, 255, 0);  // Ensure LED is GREEN (R=0, G=255, B=0)
 		}
 		
-		if (millis() - lastLdrRead >= 1000) { // Read LDR every second
+		// Uncomment the following line if you want to read LDR every second
+		// if (millis() - lastLdrRead >= 1000) // Read LDR every second
+		{ 
 			lastLdrRead = millis();
 			uint32_t ldrV = analogRead(LDR_PIN);
 			Serial.print("\nCurrent LDR Value: ");
