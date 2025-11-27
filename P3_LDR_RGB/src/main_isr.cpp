@@ -5,16 +5,12 @@
  * - LDR value read on PA1 when enabled
  */
 #include <Arduino.h>
+#include "ldr_led_lib.h"
 
 volatile uint32_t DebounceTimer = 0;
 volatile int button_count;
 int totalLoops;
 
-#define LED_R_PIN PB4
-#define LED_G_PIN PB3
-#define LED_B_PIN PB5
-#define BUTTON_PIN USER_BTN
-#define LDR_PIN PA1
 #define DEBOUNCE_TIME 250
 
 enum systemState {
@@ -24,23 +20,6 @@ enum systemState {
 
 systemState currentState = LDR_OFF;
 systemState prevState = currentState;
-
-/**
- * Set RGB LED color via PWM duty cycle.
- *
- * Parameters:
- *  - r: Red channel intensity (0 = off, 255 = max brightness)
- *  - g: Green channel intensity (0 = off, 255 = max brightness)
- *  - b: Blue channel intensity (0 = off, 255 = max brightness)
- *
- * Notes:
- *  - Uses LED_R_PIN, LED_G_PIN, LED_B_PIN configured as PWM-capable outputs.
- */
-void setRGBLedColor(uint8_t r, uint8_t g, uint8_t b) {
-	analogWrite(LED_R_PIN, r);
-	analogWrite(LED_G_PIN, g);
-	analogWrite(LED_B_PIN, b);
-}
 
 /**
  * Toggle system state between LDR_ON and LDR_OFF.
@@ -108,7 +87,7 @@ void setup() {
   	while (!Serial);  // wait for serial port to connect. Needed for native USB
   
   	delay(1000);
-  	Serial.println("Starting button ISR example...");
+  	Serial.println("\n[main_isr.c] Starting button ISR example...");
 	
 	// RGB LED
 	pinMode(LED_R_PIN, OUTPUT);
