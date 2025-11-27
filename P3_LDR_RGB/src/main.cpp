@@ -83,13 +83,11 @@ void changeState() {
  *  - BUTTON_PIN is configured with INPUT_PULLUP and interrupt on RISING edge.
  */
 void button_isr() {
-  button_count++;
+  	button_count++;
 	if (millis() - DebounceTimer >= DEBOUNCE_TIME) {
     	DebounceTimer = millis();
 		changeState();
 	}
-  	Serial.print("\n[ISR] Interrupt events detected: ");
-	Serial.println(button_count);
 }
 
 /**
@@ -143,28 +141,36 @@ void setup() {
  *   delay(), so the button ISR can still trigger and toggle the state.
  */
 void loop() {
+	static uint32_t lastLdrRead = 0;
   	totalLoops++;
 	if (currentState == LDR_ON) {
 		// LDR is ON
 		if (prevState != currentState) {
 			// State just changed
 			prevState = currentState;
+
+			Serial.print("\n[ISR] Interrupt events detected: ");
+			Serial.println(button_count);
 			Serial.println("\n[STATE] LDR ON. Starting light detection...");
-			setRGBLedColor(0, 255, 0);  // Ensure LED is GREEN
+			setRGBLedColor(0, 255, 0);  // Ensure LED is GREEN (R=0, G=255, B=0)
 		}
 		
-		uint32_t ldrV = analogRead(LDR_PIN);
-		Serial.print("\nCurrent LDR Value: ");
-		Serial.println(ldrV);
-		delay(1000);
+		if (millis() - lastLdrRead >= 1000) { // Read LDR every second
+			lastLdrRead = millis();
+			uint32_t ldrV = analogRead(LDR_PIN);
+			Serial.print("\nCurrent LDR Value: ");
+			Serial.println(ldrV);
+		}
 	}
 	else {
 		// LDR is OFF
 		if (prevState != currentState) {
 			// State just changed
 			prevState = currentState;
+			Serial.print("\n[ISR] Interrupt events detected: ");
+			Serial.println(button_count);
 			Serial.println("\n[STATE] LDR OFF. Stopping light detection...");
-			setRGBLedColor(255, 0, 0);  // Ensure LED is RED
+			setRGBLedColor(255, 0, 0);  // Ensure LED is RED (R=255, G=0, B=0)
 		}
 	}
 }
