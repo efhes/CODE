@@ -3,7 +3,7 @@
 
 int totalLoops;
 
-#define POOLING_PERIOD 1000 // milliseconds
+#define POLLING_PERIOD 1000 // milliseconds
 
 void setup() {
 	Serial.begin(9600);
@@ -30,7 +30,7 @@ void loop() {
 	// delay() is a blocking function, which means that during this time the microcontroller cannot respond to other events,
 	// read other sensors, or execute any other task. 
 	// If you need your program to be more responsive or handle multiple tasks simultaneously, consider using non-blocking techniques like millis() to control timing.
-	delay(POOLING_PERIOD);
+	delay(POLLING_PERIOD);
 
 	if (digitalRead(BUTTON_PIN) == LOW) {
 		while(digitalRead(BUTTON_PIN) == LOW);
