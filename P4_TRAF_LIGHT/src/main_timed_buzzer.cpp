@@ -11,8 +11,8 @@ STM32Timer timer(TIM1); // Using TIM1
 STM32Timer timer_buzzer(TIM2); // Using TIM2
 
 #define TIMER1_PERIOD_US 1000000 // Period in microseconds (unit for STM32 boards), equals to 1 second
-#define TIMER2_PERIOD_US 800000  // Period in microseconds for buzzer timer, equals to 800 milliseconds
-#define DEBOUNCE_TIME 250      // Debounce time in milliseconds
+#define TIMER2_PERIOD_US 500000  // Period in microseconds for buzzer timer, equals to 500 milliseconds
+#define DEBOUNCE_TIME 150      // Debounce time in milliseconds
 unsigned long DebounceTimer = 0;
 
 systemState currentState = GREEN;
@@ -229,6 +229,7 @@ void update_to_yellow(void) {
   Serial.println("[TRAFFIC LIGHT][YELLOW][PEDESTRIANS WAIT]");
   setRGBLedColor(255, 255, 0); // Set LED to Yellow
   seconds_counter = yellow_seconds; // Set countdown for YELLOW state
+  flags &= ~FLAG_COUNTDOWN; // Clears the countdown flag
 }
 
 /**
@@ -271,13 +272,14 @@ void update_to_yellow(void) {
  * @see tone() - Function to activate the buzzer
  */
 void update_to_red(void) {
-  flags &= ~FLAG_COUNTDOWN; // Clears the countdown flag
   currentState = RED; // Switch to RED state
   Serial.println("Countdown finished!!!!");
   Serial.println("[TRAFFIC LIGHT][RED][PEDESTRIANS CROSS]");
   setRGBLedColor(255, 0, 0); // Set LED to Red
   seconds_counter = red_seconds; // Set countdown for RED state
+  flags &= ~FLAG_COUNTDOWN; // Clears the countdown flag
   flags |= FLAG_BUZZER_ACTIVE; // Set buzzer active flag
+  flags &= ~FLAG_BUTTON; // Clears the button flag to ignore new presses during RED state
 }
 
 /**
@@ -320,13 +322,14 @@ void update_to_red(void) {
  * @see noTone() - Function to disable the buzzer
  */
 void update_to_cooldown(void) {
-  flags &= ~FLAG_COUNTDOWN; // Clears the countdown flag
   currentState = COOLDOWN; // Switch to COOLDOWN state
   Serial.println("Countdown finished!!!!");
   Serial.println("[TRAFFIC LIGHT][COOLDOWN][PEDESTRIANS WAIT]");
   setRGBLedColor(0, 0, 255); // Set LED to Blue
   seconds_counter = cooldown_seconds; // Set countdown for COOLDOWN state
+  flags &= ~FLAG_COUNTDOWN; // Clears the countdown flag
   flags &= ~FLAG_BUZZER_ACTIVE; // Clear buzzer active flag
+  flags &= ~FLAG_BUTTON; // Clears the button flag to ignore new presses during COOLDOWN state
 }
 
 /**
@@ -338,7 +341,7 @@ void update_to_cooldown(void) {
  * 
  * @return 1 if the buzzer timer has timed out (flag was set), 0 otherwise.
  * 
- * @details The buzzer timer is an 800ms interval timer (configured in setup()) that controls
+ * @details The buzzer timer is an 500ms interval timer (configured in setup()) that controls
  * the buzzer beeping pattern. When this timeout occurs, the buzzer FSM transitions between
  * ON and OFF states to create an intermittent beeping effect.
  * 
@@ -412,32 +415,31 @@ int transition_to_buzzer_waiting(void) {
  * This function is part of the buzzer finite state machine (FSM) that creates an intermittent
  * beeping pattern. It is typically called from the main loop when:
  * 1. The buzzer is currently in ON state (actively beeping)
- * 2. The buzzer timer has timed out (800ms interval), indicating it's time to turn OFF
+ * 2. The buzzer timer has timed out (500ms interval), indicating it's time to turn OFF
  * 
  * The OFF state represents a silent period in the buzzer beeping cycle where:
  * - The buzzer sound is deactivated
- * - The timer is restarted to measure the OFF duration (800ms)
+ * - The timer is restarted to measure the OFF duration (500ms)
  * - After the timer expires, the FSM transitions back to ON state to resume beeping
- * - This creates an alternating ON/OFF pattern (on for 800ms, off for 800ms, etc.)
+ * - This creates an alternating ON/OFF pattern (on for 500ms, off for 500ms, etc.)
  * 
  * @return void
  * 
  * @note This function must be called from the main application loop (not from an ISR).
- * @note The OFF state duration is controlled by the 800ms buzzer timer interval.
+ * @note The OFF state duration is controlled by the 500ms buzzer timer interval.
  * @note This transition occurs only when the traffic light is in RED state (FLAG_BUZZER_ACTIVE is set).
  * 
  * @see update_to_buzzer_on() - The complementary ON state transition
  * @see update_to_buzzer_waiting() - Transitions buzzer FSM back to idle state
  * @see buzzer_timer_timeout() - Condition that triggers this transition
  * @see FLAG_BUZZER_TIMER - Flag cleared when timer is restarted
- * @see timer_buzzer - The 800ms interval timer controlling buzzer timing
+ * @see timer_buzzer - The 500ms interval timer controlling buzzer timing
  * @see noTone() - Function to deactivate the buzzer
  */
 void update_to_buzzer_off(void) {
   buzzerState = OFF;
   noTone(BUZZER_PIN); // Deactivate buzzer
-  // We restart the buzzer timer
-  timer_buzzer.enableTimer();
+  Serial.println("[BUZZER][OFF]!!!!");
   flags &= ~FLAG_BUZZER_TIMER; // Clear TIMER flag, buzzer timer started
 }
 
@@ -455,18 +457,18 @@ void update_to_buzzer_off(void) {
  * This function is part of the buzzer finite state machine (FSM) that creates an intermittent
  * beeping pattern. It is typically called from the main loop when:
  * 1. The buzzer is in WAITING state and FLAG_BUZZER_ACTIVE becomes set (traffic light enters RED state)
- * 2. The buzzer is in OFF state and the buzzer timer has timed out (800ms interval), indicating it's time to turn ON
+ * 2. The buzzer is in OFF state and the buzzer timer has timed out (500ms interval), indicating it's time to turn ON
  * 
  * The ON state represents an active beeping period in the buzzer cycle where:
  * - The buzzer sound is activated at 1kHz frequency
- * - The timer is restarted to measure the ON duration (800ms)
+ * - The timer is restarted to measure the ON duration (500ms)
  * - After the timer expires, the FSM transitions to OFF state to create a silent period
- * - This creates an alternating ON/OFF pattern (on for 800ms, off for 800ms, etc.)
+ * - This creates an alternating ON/OFF pattern (on for 500ms, off for 500ms, etc.)
  * 
  * @return void
  * 
  * @note This function must be called from the main application loop (not from an ISR).
- * @note The ON state duration is controlled by the 800ms buzzer timer interval.
+ * @note The ON state duration is controlled by the 500ms buzzer timer interval.
  * @note This transition occurs only when the traffic light is in RED state (FLAG_BUZZER_ACTIVE is set).
  * 
  * @see update_to_buzzer_off() - The complementary OFF state transition
@@ -474,14 +476,13 @@ void update_to_buzzer_off(void) {
  * @see buzzer_timer_timeout() - Condition that triggers transition from OFF to ON
  * @see transition_to_buzzer_active() - Condition that triggers transition from WAITING to ON
  * @see FLAG_BUZZER_TIMER - Flag cleared when timer is restarted
- * @see timer_buzzer - The 800ms interval timer controlling buzzer timing
+ * @see timer_buzzer - The 500ms interval timer controlling buzzer timing
  * @see tone() - Function to activate the buzzer at specified frequency
  */
 void update_to_buzzer_on(void) {
   buzzerState = ON;
   tone(BUZZER_PIN, 1000); // Activate buzzer at 1kHz
-  // We start the buzzer timer
-  timer_buzzer.enableTimer();
+  Serial.println("[BUZZER][ON]!!!!");
   flags &= ~FLAG_BUZZER_TIMER; // Clear TIMER flag, buzzer timer started
 }
 
@@ -518,11 +519,12 @@ void update_to_buzzer_on(void) {
  * @see transition_to_buzzer_waiting() - Condition that triggers this transition
  * @see FLAG_BUZZER_ACTIVE - Flag that controls buzzer activation
  * @see update_to_cooldown() - Function that triggers this transition by clearing FLAG_BUZZER_ACTIVE
- * @see timer_buzzer - The 800ms interval timer that is disabled in this function
+ * @see timer_buzzer - The 500ms interval timer that is disabled in this function
  * @see noTone() - Function to deactivate the buzzer
  */
 void update_to_buzzer_waiting(void) {
   buzzerState = WAITING;
+  Serial.println("[BUZZER][WAITING]!!!!");
   noTone(BUZZER_PIN); // Deactivate buzzer
   timer_buzzer.disableTimer(); // Stop buzzer timer
   flags &= ~FLAG_BUZZER_TIMER; // Clear TIMER flag to indicate buzzer timer stopped
@@ -595,10 +597,8 @@ void setup() {
   // Timer
   timer.attachInterruptInterval(TIMER1_PERIOD_US, timer_isr);
 
-  // Buzzer Timer
-  timer_buzzer.attachInterruptInterval(TIMER2_PERIOD_US, timer_buzzer_isr); // 800ms
-  timer_buzzer.disableTimer(); // Starts disabled
-  buzzerState = WAITING; // Initial buzzer state
+  // Initial buzzer state
+  buzzerState = WAITING;
 }
 
 void loop() {
@@ -638,28 +638,31 @@ void loop() {
   // Our system has an intermittent beeping buzzer so we need 3 states: WAITING, ON and OFF
   // We use the existing timer_buzzer timer and flags to manage buzzer state
   // We implement the solution
-  switch (buzzerState) {
+ switch (buzzerState) {
     case WAITING: // Buzzer WAITING state
       if (transition_to_buzzer_active()) { // Check if buzzer activation condition is met
+        Serial.println("[BUZZER][ACTIVE]!!!!");
+        // Buzzer Timer
+        timer_buzzer.attachInterruptInterval(TIMER2_PERIOD_US, timer_buzzer_isr); // 500ms
         update_to_buzzer_on(); // Transition to ON state
       }
       break;
 
     case ON: // Buzzer ON state
-      if (buzzer_timer_timeout()) { // Check if buzzer deactivation condition is met
-        update_to_buzzer_off(); // Transition to OFF state
-      }
-      else if(transition_to_buzzer_waiting()) {
+      if(transition_to_buzzer_waiting()) {
         update_to_buzzer_waiting(); // Transition to WAITING state
+      }
+      else if (buzzer_timer_timeout()) { // Check if buzzer deactivation condition is met
+        update_to_buzzer_off(); // Transition to OFF state
       }
       break;
 
     case OFF: // Buzzer OFF state
-      if(buzzer_timer_timeout()) { // Check if buzzer activation condition is met
-        update_to_buzzer_on(); // Transition to ON state
-      }
-      else if(transition_to_buzzer_waiting()) { // Check if can transition to WAITING state
+      if(transition_to_buzzer_waiting()) { // Check if can transition to WAITING state
         update_to_buzzer_waiting(); // Transition to WAITING state
+      }
+      else if(buzzer_timer_timeout()) { // Check if buzzer activation condition is met
+        update_to_buzzer_on(); // Transition to ON state
       }
       break;
 
