@@ -1,23 +1,32 @@
 /*
- * LDR + RGB LED with button ISR
- * - Button interrupt toggles LDR reading ON/OFF
+ * LDR + RGB LED with debounced button ISR
+ * - Button interrupt toggles LDR reading ON/OFF with simple debounce
  * - RGB LED indicates state (GREEN: LDR ON, RED: LDR OFF)
  * - LDR value read on PA1 when enabled
  */
 #include <Arduino.h>
 #include "ldr_led_lib.h"
 
+volatile uint32_t DebounceTimer = 0;
 volatile int button_count;
 int totalLoops;
 
-systemState currentState = LDR_OFF;
+#define DEBOUNCE_TIME 250
+
 systemState prevState = currentState;
 
 /**
- * Interrupt Service Routine (ISR) for the user button.
+ * Interrupt Service Routine (ISR) for the user button with simple debounce.
  *
  * Behavior:
  *  - Increments the interrupt event counter (button_count) on every trigger.
+ *  - If at least DEBOUNCE_TIME milliseconds have elapsed since the last accepted
+ *    event, updates DebounceTimer and invokes changeState() to toggle the system
+ *    between LDR_ON and LDR_OFF.
+ *
+ * Timing/Assumptions:
+ *  - Uses millis() for timing; DEBOUNCE_TIME must be chosen appropriately for
+ *    the hardware/button characteristics.
  *
  * Notes:
  *  - Keep ISRs short. Serial printing inside an ISR may increase latency and is
@@ -26,11 +35,14 @@ systemState prevState = currentState;
  */
 void button_isr() {
   	button_count++;
-	changeState();
+	if (millis() - DebounceTimer >= DEBOUNCE_TIME) {
+    	DebounceTimer = millis();
+		changeState();
+	}
 }
 
 /**
- * @brief Arduino setup routine for the LDR + RGB LED example with button ISR.
+ * @brief Arduino setup routine for the LDR + RGB LED example with debounced button ISR.
  *
  * Responsibilities:
  * - Initialize Serial at 9600 baud and wait for USB connection.
@@ -39,6 +51,7 @@ void button_isr() {
  * - Configure LDR pin (PA1) as analog INPUT.
  *
  * Notes:
+ * - The button ISR applies a simple time-based debounce using DEBOUNCE_TIME.
  * - See button_isr() and changeState() for runtime behavior.
  */
 void setup() {
