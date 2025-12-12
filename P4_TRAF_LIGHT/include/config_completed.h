@@ -17,9 +17,7 @@
 #define FLAG_TIMER         0x01 // Timer flag:        its 32-bit value equals to 00000000 00000000 00000000 00000001
 #define FLAG_BUTTON        0x02 // Button flag:       its 32-bit value equals to 00000000 00000000 00000000 00000010
 #define FLAG_COUNTDOWN     0x04 // Countdown flag:    its 32-bit value equals to 00000000 00000000 00000000 00000100
-
-// To be completed by the student
-#define FLAG_BUZZER_ACTIVE 0x00 // Buzzer flag:       its 32-bit value equals to XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX 
-#define FLAG_BUZZER_TIMER  0x00 // Buzzer timer flag: its 32-bit value equals to XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX
+#define FLAG_BUZZER_ACTIVE 0x08 // Buzzer flag:       its 32-bit value equals to 00000000 00000000 00000000 00001000
+#define FLAG_BUZZER_TIMER  0x10 // Buzzer timer flag: its 32-bit value equals to 00000000 00000000 00000000 00010000
 
 #endif // CONFIG_H
